@@ -1,6 +1,8 @@
 import { ArrowLeft, Camera } from "phosphor-react"
 import { FormEvent, useState } from "react";
 import { FeedbackType, feedbackTypes } from ".."
+import { API } from "../../lib/api";
+import { Loading } from "../../Loading";
 import { ScreenshotButton } from "../ScreenshotButton";
 
 interface FeedbackContentStepProps {
@@ -12,13 +14,26 @@ interface FeedbackContentStepProps {
 export function FeedbackContentStep({ feedbackTypeSelected, onFeedbackRestartrequest, onFeedbackSent }: FeedbackContentStepProps){
     const [screenshot, setScreenshot] = useState<String | null>(null)
     const [feedback, setFeedback] = useState('');
+    const [isSendingFeedback, setIsSendingFeedback] = useState(false)
 
     const { title, image } = feedbackTypes[feedbackTypeSelected]
 
-    function handleSubmit(e: FormEvent){
+    async function handleSubmit(e: FormEvent){
         e.preventDefault();
+
+        setIsSendingFeedback(true);
+        try{
+            await API.post('/feedbacks', {
+                type: feedbackTypeSelected,
+                comment: feedback,
+                screenshot
+            });
+            onFeedbackSent();
+        }catch(err){
+            console.log(err)
+        }
+        setIsSendingFeedback(false);
         
-        onFeedbackSent();
     }
 
 
@@ -51,9 +66,9 @@ export function FeedbackContentStep({ feedbackTypeSelected, onFeedbackRestartreq
                         title="Enviar feedback"
                         type="submit"
                         className="p-2 bg-brand-500 rounded border-transparent flex-1 flex justify-center items-center text-sm hover:bg-brand-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-brand-500 transition-colors disabled:opacity-50 disabled:hover:bg-brand-500"
-                        disabled={feedback.length == 0}
+                        disabled={feedback.length == 0 || isSendingFeedback}
                     >
-                        Enviar feedback
+                        {isSendingFeedback ? <Loading/> : 'Enviar feedback'}
                     </button>
                 </footer>
             </form>
